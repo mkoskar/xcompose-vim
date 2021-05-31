@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+
+import re
+
+keymap = {
+    0x0020: 'space',
+    0x0021: 'exclam',
+    0x0022: 'quotedbl',
+    0x0023: 'numbersign',
+    0x0024: 'dollar',
+    0x0025: 'percent',
+    0x0026: 'ampersand',
+    0x0027: 'apostrophe',
+    0x0028: 'parenleft',
+    0x0029: 'parenright',
+    0x002A: 'asterisk',
+    0x002B: 'plus',
+    0x002C: 'comma',
+    0x002D: 'minus',
+    0x002E: 'period',
+    0x002F: 'slash',
+    0x003A: 'colon',
+    0x003B: 'semicolon',
+    0x003C: 'less',
+    0x003D: 'equal',
+    0x003E: 'greater',
+    0x003F: 'question',
+    0x0040: 'at',
+    0x005B: 'bracketleft',
+    0x005C: 'backslash',
+    0x005D: 'bracketright',
+    0x005E: 'asciicircum',
+    0x005F: 'underscore',
+    0x0060: 'grave',
+    0x007B: 'braceleft',
+    0x007C: 'bar',
+    0x007D: 'braceright',
+    0x007E: 'asciitilde',
+}
+
+with open('UnicodeData.txt', 'r') as f:
+    unimap = {}
+    for line in f:
+        if not line:
+            continue
+        line = line.strip()
+        v = tuple(line.split(';'))
+        k = int(v[0], 16)
+        unimap[k] = v
+
+re_digraph = re.compile(r"\{\s*'(.*)',\s*'(.*)',\s*(.+)\s*\}")
+re_digraph_header = re.compile(r'define DG_START_(\w*)')
+re_start = re.compile(r'digraphs for Unicode from RFC1345')
+re_stop = re.compile(r'\};')
+
+
+def key(c):
+    if c == r'\\' or c == r'\'':
+        c = c[1]
+    return keymap.get(ord(c), c)
+
+
+with open('digraph.c', 'r') as f:
+    started = False
+    for line in f:
+        if not line:
+            continue
+        line = line.strip()
+        if not started:
+            if re_start.search(line):
+                started = True
+        else:
+            if re_stop.fullmatch(line):
+                break
+            if m := re_digraph_header.search(line):
+                print(f'\n# {m.group(1)}')
+                continue
+            if m := re_digraph.search(line):
+                a = f'<{key(m.group(1))}>'
+                b = f'<{key(m.group(2))}>'
+                dec = int(m.group(3), 16)
+                uni = unimap[dec]
+                val = f'"{chr(dec)}"'
+                if dec == 92:
+                    val = r'"\\"'
+                desc = f'# {uni[0]} : {uni[1]}'
+                if uni[2] == 'Cc':
+                    if uni[10]:
+                        desc += f' {uni[10]}'
+                    val = rf'"\x{uni[0]}"'
+                print(f'<Multi_key> {a:>14} {b:14} : {val:10} {desc}')
