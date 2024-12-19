@@ -132,13 +132,13 @@ with open('digraph.c', 'r') as f, \
                 dec = int(m.group(3), 16)
                 uni = unimap[dec]
                 val = f'"{chr(dec)}"'
-                desc = f'# {uni[0]} : {uni[1]}'
-                if dec == 92:
+                if dec == 10:
+                    val = r'"\x0A"'
+                elif dec == 92:
                     val = r'"\\"'
-                elif uni[2] == 'Cc':
-                    if uni[10]:
-                        desc += f' {uni[10]}'
-                    val = rf'"\x{uni[0][2:]}"'
+                desc = f'# {uni[0]} : {uni[1]}'
+                if uni[2] == 'Cc' and uni[10]:
+                    desc += f' {uni[10]}'
                 a_ = f'<{a}>'
                 b_ = f'<{b}>'
                 of.write(f'<Multi_key> {a_:>14} {b_:14} : {val:6} {desc}\n')
