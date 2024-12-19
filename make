@@ -12,7 +12,7 @@ fetch() {
     local url=$1 oname stat scode surl
     oname=${url##*/}
     stat=$(
-        curl -sSL -C - -z "$oname" \
+        curl -qsSL -C - -z "$oname" \
             -w '%{http_code}\t%{url_effective}' \
             ${UAGENT:+-A "$UAGENT"} \
             -o "$tmpdir/$oname" "$url"
